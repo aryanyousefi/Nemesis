@@ -29,7 +29,7 @@ from evaluation import PTBTokenizer, Cider
 from evaluation import compute_emotional_alignment
 from models import Captioner
 from models import clip
-from six.moves import cPickle, range#BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+from six.moves import cPickle, range
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 _logger = logging.getLogger('train')
@@ -45,13 +45,6 @@ def load_vocabulary(file_name):
 
 
 def unpickle_data(file_name, python2_to_3=False):
-    """ Restore data previously saved with pickle_data().
-    :param file_name: file holding the pickled data.
-    :param python2_to_3: (boolean), if True, pickle happened under python2x, unpickling under python3x.
-    :return: an generator over the un-pickled items.
-    Note, about implementing the python2_to_3 see
-        https://stackoverflow.com/questions/28218466/unpickling-a-python-2-object-with-python-3
-    """
     in_file = open(file_name, 'rb')
     if python2_to_3:
         size = cPickle.load(in_file, encoding='latin1')
@@ -66,26 +59,24 @@ def unpickle_data(file_name, python2_to_3=False):
     in_file.close()
     
     
-def flatten(l):#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    if isinstance(l, list):#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-        for v in l:#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-            yield from flatten(v)#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    else:#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-        yield l#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+def flatten(l):
+    if isinstance(l, list):
+        for v in l:
+            yield from flatten(v)
+    else:
+        yield l
 
         
-def evaluate_emoalign(ground_truth, captions, split):#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBBBBBBBBB
+def evaluate_emoalign(ground_truth, captions, split):
     wiki_art_img_dir = '/home/ayousefi/wikiart'
     references_file = '/home/ayousefi/artemis-master/artemis/preprocessed_for_deep_net/artemis_gt_references_grouped.pkl'
     text2emo_path = '/home/ayousefi/artemis-master/artemis/classifiers/txt_to_emotion_lstm_based/best_model.pt'
     vocab_path = '/home/ayousefi/artemis-master/artemis/preprocessed_for_deep_net/vocabulary.pkl'    
-    gt_data = next(unpickle_data(references_file))#BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+    gt_data = next(unpickle_data(references_file))
 
-    train_utters = gt_data['train']['references_pre_vocab']#BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
-    train_utters = list(itertools.chain(*train_utters))  #BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
-#    print('Training Utterances', len(train_utters))#BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
-    unique_train_utters = set(train_utters)#BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
-#    print('Unique Training Utterances', len(unique_train_utters))#BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+    train_utters = gt_data['train']['references_pre_vocab']
+    train_utters = list(itertools.chain(*train_utters))
+    unique_train_utters = set(train_utters)
     
     gt_data = gt_data[split]
 #    print('Images Captioned', len(gt_data))
@@ -98,18 +89,10 @@ def evaluate_emoalign(ground_truth, captions, split):#AAAAAAAAAAAAAAAAAAAAAAAAAA
     #_logger.info('CAPTIONS: \n')
     #_logger.info(captions)
     txt2emo_vocab = load_vocabulary(vocab_path)
-#    print('vocab size', len(txt2emo_vocab))
 
-#    for caption in captions:  # you might have sampled under several sampling configurations
-    merged = pd.merge(gt_data, captions)#BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
-        #merged = pd.merge(ground_truth, captions)  # this ensures proper order of captions to gt (via accessing merged.captions)
+    merged = pd.merge(gt_data, captions)
     hypothesis = merged.caption # i.e., use references that do not have <UNK>
     ref_emotions = merged.emotion
-    #_logger.info("MERGED:")
-    #_logger.info(merged)#BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
-    #_logger.info("HYPOTHESIS:")
-    #_logger.info(hypothesis)#BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
-    #_logger.info(ref_emotions)#BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
     emoalign_score = compute_emotional_alignment(hypothesis, ref_emotions, txt2emo_clf, txt2emo_vocab, device='cuda')
     if args.phase == 'xe':
         _logger.info('EMOTIONAL ALIGNMENT SCORE: ')
@@ -125,10 +108,10 @@ def evaluate_metrics(model, dataloader, text_field, emotion_encoder=None):
     paths = {}
     gen = {}
     gts = {}
-    captions = {'path':[], 'caption':[]}#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    ground_truth = {'path':[], 'gtcaption':[]}#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    gen_caps = pd.DataFrame(captions, columns=['path', 'caption'])#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    gt_caps = pd.DataFrame(captions, columns=['path', 'gtcaption'])#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    captions = {'path':[], 'caption':[]}
+    ground_truth = {'path':[], 'gtcaption':[]}
+    gen_caps = pd.DataFrame(captions, columns=['path', 'caption'])
+    gt_caps = pd.DataFrame(captions, columns=['path', 'gtcaption'])
 
     header = f'Evaluation metrics Epoch: [{e}]'
     with torch.no_grad():
@@ -150,8 +133,8 @@ def evaluate_metrics(model, dataloader, text_field, emotion_encoder=None):
             for i, (gts_i, gen_i) in enumerate(zip(caps_gt, caps_gen)):
                 gen['%d_%d_%d' % (args.rank, it, i)] = [gen_i, ]
                 gts['%d_%d_%d' % (args.rank, it, i)] = gts_i
-                gen_caps = gen_caps.append({'path': gts_i, 'caption': gen_i}, ignore_index=True)#AAAWRONGWONRONORNEGONEOQKFOEKRFOQAEMKC
-                gt_caps = gt_caps.append({'path': gen_i, 'gtcaption': gts_i}, ignore_index=True)#ANKSDVNOAWEOFKQWPOEKFOQPWKEFOPQWKEOQKWE
+                gen_caps = gen_caps.append({'path': gts_i, 'caption': gen_i}, ignore_index=True)
+                gt_caps = gt_caps.append({'path': gen_i, 'gtcaption': gts_i}, ignore_index=True)
 
     if args.distributed:
         paths_all = [None for _ in range(args.world_size)]
@@ -254,7 +237,7 @@ def train_scst(target_model, online_model, dataloader, optim, cider, text_field,
     metric_logger = utils.MetricLogger(delimiter="  ")
     header = 'Training Epoch: [{}]'.format(e)
 
-    for it, (detections, captions_emotions) in enumerate(metric_logger.log_every(dataloader, _print_freq, header)):#XXXXXXXXXXXXXXXX
+    for it, (detections, captions_emotions) in enumerate(metric_logger.log_every(dataloader, _print_freq, header)):
         detections = detections.to(device)
         caps_gt, emotions = captions_emotions
         if emotion_encoder is not None:
@@ -389,7 +372,6 @@ if __name__ == '__main__':
     image_model = clip_model.visual
     image_model.forward = image_model.intermediate_features
     image_field = ArtEmisDetectionsField(detections_path=args.features_path, max_detections=50)
-    #args.image_dim = image_model.embed_dim
 
     # Pipeline for text
     text_field = TextField()
@@ -406,9 +388,7 @@ if __name__ == '__main__':
     dict_dataset_train = dataset_train.image_dictionary({'image': image_field, 'text': RawField(), 'emotion': emotion_field})
     dict_dataset_val = dataset_val.image_dictionary({'image': image_field, 'text': RawField(), 'emotion': emotion_field})
     dict_dataset_test = dataset_test.image_dictionary({'image': image_field, 'text': RawField(), 'emotion': emotion_field})
-    dataset_scst = dataset_train.image_dictionary({'image': Merge(RawField(), image_field), 'text': RawField()})#XXXXXXXXXXXXXXXXXXXXXXXXXX
-    #dataset_val = dataset_val.image_dictionary({'image': Merge(RawField(), image_field), 'text': RawField(), 'emotion': RawField()})
-    #dataset_test = dataset_test.image_dictionary({'image': Merge(RawField(), image_field), 'text': RawField(), 'emotion': RawField()})
+    dataset_scst = dataset_train.image_dictionary({'image': Merge(RawField(), image_field), 'text': RawField()})
     
         # Model and dataloaders
     emotion_dim = 0
@@ -432,19 +412,8 @@ if __name__ == '__main__':
         train_sampler = torch.utils.data.distributed.DistributedSampler(dataset_train)
         val_sampler = torch.utils.data.distributed.DistributedSampler(dataset_val, shuffle=False)
         test_sampler = torch.utils.data.distributed.DistributedSampler(dataset_test, shuffle=False)
-    #else:
-       # train_sampler = torch.utils.data.RandomSampler(dataset_train)
-       # val_sampler = torch.utils.data.SequentialSampler(dataset_val)
-       # test_sampler = torch.utils.data.SequentialSampler(dataset_test)
 
     train_batch_size = args.batch_size if 'scst' not in args.phase else args.batch_size // 5
-    #dataloader_train = DataLoader(dataset_train, batch_size=train_batch_size, num_workers=args.workers,
-    #                              sampler=train_sampler, pin_memory=True)
-    #dataloader_scst = DataLoader(dataset_scst, batch_size=train_batch_size, num_workers=args.workers,
-    #                              sampler=train_sampler, pin_memory=True)#XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    #dataloader_val = DataLoader(dataset_val, batch_size=args.batch_size // 5, sampler=val_sampler, pin_memory=True)
-    #dataloader_test = DataLoader(dataset_test, batch_size=args.batch_size // 5, sampler=test_sampler,
-    #                             pin_memory=True)
     dataloader_scst = DataLoader(dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=args.workers,
                                       drop_last=True)
     dict_dataloader_train = DataLoader(dict_dataset_train, batch_size=args.batch_size // 5, shuffle=True,
@@ -559,27 +528,20 @@ if __name__ == '__main__':
         scores,val_gt_caps, val_gen_caps = evaluate_metrics(online_model_without_ddp, dict_dataloader_val, text_field, emotion_encoder)
         _logger.info(f'Online validation scores {scores}')
         val_o_cider = scores['CIDEr']
-        #val_emo_score = evaluate_emoalign(val_gt_caps, val_gen_caps, 'val')#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA YOU CAN REMOVE VAL_GT_CAPS
-        #_logger.info('Online validation Emo-Align score:')#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-        #_logger.info(val_emo_score)#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+        #val_emo_score = evaluate_emoalign(val_gt_caps, val_gen_caps, 'val')
 
         # Target validation loss and scores
         scores, val_gt_caps, val_gen_caps = evaluate_metrics(target_model, dict_dataloader_val, text_field, emotion_encoder)
         _logger.info(f'Target validation scores {scores}')
         val_t_cider = scores['CIDEr']
-        #val_emo_score = evaluate_emoalign(val_gt_caps, val_gen_caps, 'val')#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA YOU CAN REMOVE VAL_GT_CAPS
-        #_logger.info('Target validation Emo-Align score:')#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-        #_logger.info(val_emo_score)#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+        #val_emo_score = evaluate_emoalign(val_gt_caps, val_gen_caps, 'val')
 
         # Online test scores
         scores, test_gt_caps, test_gen_caps = evaluate_metrics(online_model_without_ddp, dict_dataloader_test, text_field, emotion_encoder)
         _logger.info(f'Online test scores {scores}')
         test_o_cider = scores['CIDEr']
-        #test_emo_score = evaluate_emoalign(test_gt_caps, test_gen_caps, 'test')#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-        #_logger.info('Test Emo-Align Score:')#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-        #_logger.info(test_emo_score)#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+        #test_emo_score = evaluate_emoalign(test_gt_caps, test_gen_caps, 'test')
         
-
         # Target test scores
         scores, test_gt_caps, test_gen_caps = evaluate_metrics(target_model, dict_dataloader_test, text_field, emotion_encoder)
         _logger.info(f'Target test scores {scores}')
@@ -620,15 +582,15 @@ if __name__ == '__main__':
             }
 
             if args.use_emotion_labels:
-                torch.save(save_dict, f'/home/ayousefi/projects/def-kpassi/ayousefi/Epoch0_Grounded_Shuffled/{args.exp_name}_last_emo.pth')
+                torch.save(save_dict, f'/dir/{args.exp_name}_last_emo.pth')
             else:
-                torch.save(save_dict, f'/home/ayousefi/projects/def-kpassi/ayousefi/Epoch0_Grounded_Shuffled/{args.exp_name}_last_emo.pth')
+                torch.save(save_dict, f'/dir/{args.exp_name}_last_emo.pth')
 
             if best:
                 if args.use_emotion_labels:
-                    copyfile(f'/home/ayousefi/projects/def-kpassi/ayousefi/Epoch0_Grounded_Shuffled/{args.exp_name}_last_emo.pth', f'/home/ayousefi/projects/def-kpassi/ayousefi/Epoch0_Grounded_Shuffled/{args.exp_name}_best_emo.pth')
+                    copyfile(f'/dir/{args.exp_name}_last_emo.pth', f'/dir/{args.exp_name}_best_emo.pth')
                 else:
-                    copyfile(f'/home/ayousefi/projects/def-kpassi/ayousefi/Epoch0_Grounded_Shuffled/{args.exp_name}_last_emo.pth', f'/home/ayousefi/outputs/camel/saved_models/{args.exp_name}_best_emo.pth')
+                    copyfile(f'/dir/{args.exp_name}_last_emo.pth', f'/dir/{args.exp_name}_best_emo.pth')
 
         if exit_train:
             break
